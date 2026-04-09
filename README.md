@@ -13,14 +13,10 @@ sudo apt install libopencv-dev
 
 and the QT development packages:
 ```
-sudo apt-get install qtbase5-dev
-sudo apt-get install libqwt-qt5-dev
+sudo apt-get install qt6-base-dev
 ```
 
-The demo displays the camera in a QT window and
-also displays the grey value of the centre
-pixel with a thermometer.
-
+The demo displays the camera in a QT window and is an example how it's done.
 
 ## V4L controls
 
