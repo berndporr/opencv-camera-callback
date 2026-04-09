@@ -1,10 +1,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <qwt/qwt_thermo.h>
-
 #include <QBoxLayout>
-#include <QPushButton>
 #include <QLabel>
 
 #include "camera.h"
@@ -17,24 +14,10 @@ class Window : public QWidget
 
 public:
 	Window();
-	~Window();
 	void updateImage(const cv::Mat &mat);
 
-	QwtThermo    *thermo;
 	QHBoxLayout  *hLayout;  // horizontal layout
-	Camera       camera;
 	QLabel       *image;
-
-	struct MyCallback : Camera::SceneCallback {
-		Window* window = nullptr;
-		virtual void nextScene(const cv::Mat &mat) {
-			if (nullptr != window) {
-				window->updateImage(mat);
-			}
-		}
-	};
-
-	MyCallback myCallback;
 };
 
 #endif // WINDOW_H

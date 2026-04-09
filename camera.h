@@ -1,58 +1,67 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/videodev2.h>
 
 #include <iostream>
 #include <stdlib.h>
 #include <thread>
+#include <functional>
 
 /*!
  * Camera class with callback
  * GNU GPL v3.0
- * (C) 2022
+ * (C) 2022-2026
  * [Ross Gardiner](https://github.com/rossGardiner)
- * [Adam Frew](https://github.com/Saweenbarra) 
+ * [Adam Frew](https://github.com/Saweenbarra)
  * [Alban Joseph](https://github.com/albanjoseph)
  * [Lewis Russell](https://github.com/charger4241)
  * Bernd Porr
  */
-class Camera {
+struct V4LParameter {
+    std::string devicePath;
+    int parameter;
+    float value;
+};
+
+class Camera
+{
 public:
-	/**
-	 * Callback which needs to be implemented by the client
-	 **/
-	struct SceneCallback {
-		virtual void nextScene(const cv::Mat &mat) = 0;
-	};
+    /**
+     * Callback which is called when a new frame is available
+     **/
+    using OnFrame = std::function<void(const cv::Mat &)>;
 
-	/**
-	 * Default constructor
-	 **/
-	Camera() = default;
+    /**
+     * Default constructor
+     **/
+    Camera() = default;
 
-	/**
-	 * Starts the acquisition from the camera
-	 * and then the callback is called at the framerate.
-	 **/
-	void start(int deviceID = 0, int apiID = 0);
+    /**
+     * Starts the acquisition from the camera
+     * and then the callback is called at the framerate.
+     **/
+    void start(int deviceID = 0, const std::vector<V4LParameter> v4lParameters = {});
 
-	/**
-	 * Stops the data aqusisition
-	 **/
-	void stop();
+    /**
+     * Stops the data aqusisition
+     **/
+    void stop();
 
-	/**
-	 * Registers the callback which receives the
-	 * frames.
-	 **/
-	void registerSceneCallback(SceneCallback* sc) {
-		sceneCallback = sc;
-	}
+    /**
+     * Registers the callback which receives the frames.
+     **/
+    void registerFrameCallback(OnFrame sc) {
+        onFrame = sc;
+    }
     
 private:
-	void postFrame();
-	void threadLoop();
-	cv::VideoCapture videoCapture;
-	std::thread cameraThread;
-	bool isOn = false;
-	SceneCallback* sceneCallback = nullptr;
+    void threadLoop();
+    cv::VideoCapture videoCapture;
+    std::thread cameraThread;
+    bool isOn = false;
+    OnFrame onFrame;
+    void setV4Lparameter(const V4LParameter &v4lParameter);
 };

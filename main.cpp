@@ -7,13 +7,26 @@ int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 
-	// create the window
+	// Create camera
+	Camera camera;
+
+	// Create the window
 	Window window;
+
+	// Show the window
 	window.show();
 
-	// call the window.timerEvent function every 40 ms
-	window.startTimer(40);
+	// Connect the camera to the window
+	camera.registerFrameCallback([&](const cv::Mat &m){window.updateImage(m);});	
 
-	// execute the application
-	return app.exec();
+	// Call the window timerEvent function every 20 ms to refresh the image
+	window.startTimer(20);
+
+	// Start the camera
+	camera.start(22,{{"/dev/v4l-subdev2",V4L2_CID_GAIN,0.5}});
+
+	// Execute the application. This is blocking till the user closes it.
+	app.exec();
+
+	camera.stop();
 }
