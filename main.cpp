@@ -7,6 +7,12 @@ int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 
+	int vidDevNo = 0;
+
+	if (argc > 1) {
+		vidDevNo = atoi(argv[1]);
+	}
+
 	// Create camera
 	Camera camera;
 
@@ -23,7 +29,7 @@ int main(int argc, char *argv[])
 	window.startTimer(20);
 
 	// Start the camera
-	camera.start(22,{{"/dev/v4l-subdev2",V4L2_CID_GAIN,0.5}});
+	camera.start(vidDevNo,{{"/dev/v4l-subdev2",V4L2_CID_GAIN,0.5}});
 
 	// Execute the application. This is blocking till the user closes it.
 	app.exec();

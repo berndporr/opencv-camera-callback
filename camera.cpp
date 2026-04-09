@@ -9,6 +9,8 @@ void Camera::threadLoop()
 	while (isOn)
 	{
 		cv::Mat cap;
+
+		videoCapture.set(cv::CAP_PROP_CONVERT_RGB, true);
 		videoCapture.read(cap);
 		// check if we succeeded
 		if (cap.empty())
@@ -41,9 +43,11 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
 		int d = query.maximum - query.minimum;
 		struct v4l2_control control;
 		control.id = v4lParameter.parameter;
-		control.value = query.minimum + (int)round(v4lParameter.value*d);
-		if (control.value > query.maximum) control.value = query.maximum;
-		if (control.value < query.minimum) control.value = query.minimum;
+		control.value = query.minimum + (int)round(v4lParameter.value * d);
+		if (control.value > query.maximum)
+			control.value = query.maximum;
+		if (control.value < query.minimum)
+			control.value = query.minimum;
 		if (ioctl(fd, VIDIOC_S_CTRL, &control) < 0)
 		{
 			perror("Setting Parameter");
@@ -52,7 +56,9 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
 		{
 			printf("Parameter set to %d\n", control.value);
 		}
-	} else {
+	}
+	else
+	{
 		perror("Querying video device.");
 		std::cerr << v4lParameter.devicePath << "," << v4lParameter.parameter << "," << v4lParameter.value << std::endl;
 	}
@@ -63,10 +69,17 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
  */
 void Camera::start(int deviceID, const std::vector<V4LParameter> v4lParameters)
 {
-	for(const auto &p: v4lParameters) {
+	for (const auto &p : v4lParameters)
+	{
 		setV4Lparameter(p);
 	}
 	videoCapture.open(deviceID, cv::CAP_V4L2);
+	videoCapture.set(cv::CAP_PROP_CONVERT_RGB, 1);
+	fprintf(stderr, "FOURCC:");
+	int fourcc = videoCapture.get(cv::CAP_PROP_FOURCC);
+	for (long unsigned int i = 0; i < sizeof(fourcc); i++)
+		fprintf(stderr, "%c", ((char *)(&fourcc))[i]);
+	fprintf(stderr, "\n");
 	cameraThread = std::thread(&Camera::threadLoop, this);
 }
 
