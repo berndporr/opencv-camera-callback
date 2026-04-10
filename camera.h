@@ -21,10 +21,19 @@
  * [Lewis Russell](https://github.com/charger4241)
  * Bernd Porr
  */
-struct V4LParameter {
+struct V4LParameter
+{
     std::string devicePath;
     int parameter;
     float value;
+};
+
+struct OpenCVparameters
+{
+    int deviceID = 0;
+    unsigned int fourcc = 0;
+    int width = 0;
+    int height = 0;
 };
 
 class Camera
@@ -44,7 +53,8 @@ public:
      * Starts the acquisition from the camera
      * and then the callback is called at the framerate.
      **/
-    void start(int deviceID = 0, const std::vector<V4LParameter> v4lParameters = {});
+    OpenCVparameters start(const OpenCVparameters openCVparameters = OpenCVparameters(),
+               const std::vector<V4LParameter> v4lParameters = {});
 
     /**
      * Stops the data aqusisition
@@ -54,10 +64,11 @@ public:
     /**
      * Registers the callback which receives the frames.
      **/
-    void registerFrameCallback(OnFrame sc) {
+    void registerFrameCallback(OnFrame sc)
+    {
         onFrame = sc;
     }
-    
+
 private:
     void threadLoop();
     cv::VideoCapture videoCapture;

@@ -4,12 +4,12 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif()
 
-project(opencv-camera-calback VERSION 1.0.0 LANGUAGES CXX)
+project(opencv-camera-callback VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set (CMAKE_CXX_FLAGS "-Wall -Winvalid-pch -Wnon-virtual-dtor -Wextra -Wno-unused-parameter")
+set (CMAKE_CXX_FLAGS "-Wall -pedantic")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -20,13 +20,13 @@ find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable(webcam-viewer
+add_executable(camera-viewer
   window.cpp
   main.cpp
   camera.cpp
 )
 
-target_link_libraries(webcam-viewer Qt6::Widgets)
-target_link_libraries(webcam-viewer ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(camera-viewer Qt6::Widgets)
+target_link_libraries(camera-viewer ${OpenCV_LIBS} Threads::Threads)
 
-install(TARGETS webcam-viewer)
+install(TARGETS camera-viewer)

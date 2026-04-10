@@ -38,8 +38,6 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
 	query.id = v4lParameter.parameter;
 	if (ioctl(fd, VIDIOC_QUERYCTRL, &query) == 0)
 	{
-		printf("parameter range: %d to %d (step %d)\n",
-			   query.minimum, query.maximum, query.step);
 		int d = query.maximum - query.minimum;
 		struct v4l2_control control;
 		control.id = v4lParameter.parameter;
@@ -52,10 +50,6 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
 		{
 			perror("Setting Parameter");
 		}
-		else
-		{
-			printf("Parameter set to %d\n", control.value);
-		}
 	}
 	else
 	{
@@ -67,20 +61,29 @@ void Camera::setV4Lparameter(const V4LParameter &v4lParameter)
 /*!
  * Starts the worker thread recording
  */
-void Camera::start(int deviceID, const std::vector<V4LParameter> v4lParameters)
+OpenCVparameters Camera::start(OpenCVparameters openCVparameters,
+							   const std::vector<V4LParameter> v4lParameters)
 {
 	for (const auto &p : v4lParameters)
 	{
 		setV4Lparameter(p);
 	}
-	videoCapture.open(deviceID, cv::CAP_V4L2);
+	videoCapture.open(openCVparameters.deviceID, cv::CAP_V4L2);
+	if (openCVparameters.fourcc > 0)
+	{
+		videoCapture.set(cv::CAP_PROP_FOURCC, openCVparameters.fourcc);
+	}
+	if ((openCVparameters.width > 0) && (openCVparameters.height > 0))
+	{
+		videoCapture.set(cv::CAP_PROP_FRAME_WIDTH, openCVparameters.width);
+		videoCapture.set(cv::CAP_PROP_FRAME_HEIGHT, openCVparameters.height);
+	}
+	openCVparameters.width = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
+	openCVparameters.height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	videoCapture.set(cv::CAP_PROP_CONVERT_RGB, 1);
-	fprintf(stderr, "FOURCC:");
-	int fourcc = videoCapture.get(cv::CAP_PROP_FOURCC);
-	for (long unsigned int i = 0; i < sizeof(fourcc); i++)
-		fprintf(stderr, "%c", ((char *)(&fourcc))[i]);
-	fprintf(stderr, "\n");
+	openCVparameters.fourcc = videoCapture.get(cv::CAP_PROP_FOURCC);
 	cameraThread = std::thread(&Camera::threadLoop, this);
+	return openCVparameters;
 }
 
 /*!
