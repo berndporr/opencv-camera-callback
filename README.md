@@ -3,6 +3,77 @@
 Callback based camera class for openCV where the client registers a callback
 which then receives the frames at the framerate of the camera.
 
+It should run with the default parameters if you have a simple camera setup on `/dev/video0`.
+However, especially on ARM architectures such as the Raspberry PI or Rock5 there is a looooong
+singnal processing pipeline which you can obtain with `media-ctl -p -d </dev/mediaX>` with. In
+particular the camera might be a subdevice so needs to be configured separately for example
+`/dev/v4l-subdev2` on a Rock5.
+
+Here is the camera class:
+```
+/**
+  * Raw V4L parameters which can be queried with: "v4l2-ctl --device=/dev/v4l-subdev2 -L" and then use the
+  * matching V4L2_CID_*** macro to change the value. For simple camera setups the device path will be
+  * /dev/video0 but for cameras with an Image Processor pipelie and will be a subdevice. You can find 
+  * these with "media-ctl -p -d 0".
+  */
+struct V4LParameter
+{
+    std::string devicePath; // the device path, for example /dev/v4l-subdev2
+    int parameter; // the parameter, for example V4L2_CID_GAIN
+    float value; // the value of the parameter. It's normalised between 0 and 1. boolan is either 0 or 1.
+};
+
+/**
+ * The parameters passed to openCV.
+ */
+struct OpenCVparameters
+{
+    int deviceID = 0; // the ID of the video device. Default is /dev/video0
+    unsigned int fourcc = 0; // the fourcc code of the capture format
+    int width = 0; // the requested image width (0=default)
+    int height = 0; // the requested image height (0=default)
+};
+
+/**
+* Camera class which captures with openCV and returns frames in a callback
+*/
+class Camera
+{
+public:
+    /**
+     * Callback which is called when a new frame is available
+     **/
+    using OnFrame = std::function<void(const cv::Mat &)>;
+
+    /**
+     * Default constructor
+     **/
+    Camera() = default;
+
+    /**
+     * Starts the acquisition from the camera
+     * and then the callback is called at the default framerate.
+     * @param openCVparameters The parameters passed to openCV.
+     * @param v4lParameters The parameters passed directly to an v4l subdevice.
+     **/
+    OpenCVparameters start(const OpenCVparameters openCVparameters = OpenCVparameters(),
+                           const std::vector<V4LParameter> v4lParameters = {});
+
+    /**
+     * Stops the data aqusisition
+     **/
+    void stop();
+
+    /**
+     * Registers the callback which receives the frames.
+     **/
+    void registerFrameCallback(OnFrame sc)
+    {
+        onFrame = sc;
+    }
+
+```
 
 ## QT demo
 
@@ -14,6 +85,12 @@ sudo apt install libopencv-dev
 and the QT development packages:
 ```
 sudo apt-get install qt6-base-dev
+```
+
+```
+cmake .
+make
+./camera-viewer
 ```
 
 The demo displays the camera in a QT window and is an example how it's done.
@@ -37,7 +114,7 @@ is usually the raw image capture chain without any further processing. The last 
 ```
 this can be seen as it has *only* a pad called SOURCE but no *sink*.
 
-Every camera has a matching Image Signal Processor chain. This is in a different `/dev/media`. Here, it's `/dev/media2`:
+There might be a matching Image Signal Processor chain. This is in a different `/dev/media`. For example, `/dev/media2`:
 
 ```
 media-ctl -p -d 2
@@ -92,7 +169,7 @@ Device topology
 ```
 This shows that `/dev/v4l-subdev4` is again camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` which can be captured!
 
-So the parameters can be changed via the subdevices and devices. The `start()` method has a vector which allows to set parameters such as gain or cropping.
+So the parameters can be changed via the subdevices and devices. The `start()` method has a vector which allows to set parameters such as gain or horizontal flip.
 
 
 # Credits

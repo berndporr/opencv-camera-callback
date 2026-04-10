@@ -24,15 +24,13 @@ int main(int argc, char *argv[])
 	window.startTimer(20);
 
 	OpenCVparameters openCVparameters;
-	openCVparameters.fourcc = cv::VideoWriter::fourcc('N', 'V', '1', '2');
 	if (argc > 1)
 	{
 		openCVparameters.deviceID = atoi(argv[1]);
 	}
 
 	// Start the camera
-	openCVparameters = camera.start(openCVparameters,
-									{{"/dev/v4l-subdev2", V4L2_CID_GAIN, 0.5}});
+	openCVparameters = camera.start(openCVparameters);
 
 	fprintf(stderr, "Resolution: %d x %d\n", openCVparameters.width, openCVparameters.height);
 	fprintf(stderr, "FOURCC:");
