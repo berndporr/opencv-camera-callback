@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	openCVparameters.fourcc = cv::VideoWriter::fourcc('N', 'V', '1', '2');
 	if (argc > 1)
 	{
-		openCVparameters.deviceID = 23;
+		openCVparameters.deviceID = atoi(argv[1]);
 	}
 
 	// Start the camera

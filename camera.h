@@ -54,7 +54,7 @@ public:
      * and then the callback is called at the framerate.
      **/
     OpenCVparameters start(const OpenCVparameters openCVparameters = OpenCVparameters(),
-               const std::vector<V4LParameter> v4lParameters = {});
+                           const std::vector<V4LParameter> v4lParameters = {});
 
     /**
      * Stops the data aqusisition

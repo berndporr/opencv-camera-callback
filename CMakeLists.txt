@@ -22,7 +22,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_executable(camera-viewer
   window.cpp
-  main.cpp
+  camera-viewer.cpp
   camera.cpp
 )
 
