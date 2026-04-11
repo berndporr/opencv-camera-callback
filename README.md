@@ -3,13 +3,17 @@
 Callback based camera class for openCV where the client registers a callback
 which then receives the frames at the framerate of the camera.
 
-It should run with the default parameters if you have a simple camera setup on `/dev/video0`.
-However, especially on ARM architectures such as the Raspberry PI or Rock5 there is a looooong
-singnal processing pipeline. On the Raspberry PI you could use libcamera which "knows" about
-the signal processing pipelines and exposes only one libcamera device. However, on other
-architectures such as the Rock5 you need to do it the hard way: understand the signal
-processing pipeline, configure sub-devices and then capture from the /dev/videoX which
-openCV can read and decde. See the 4VL deep dive further down.
+It should run with the default parameters if you have a simple camera
+setup on `/dev/video0`.  However, especially on ARM architectures such
+as the Raspberry PI or Rock5 there is a looooong singnal processing
+pipeline. On the Raspberry PI you could use [libcamera with
+libcamera2opencv](https://github.com/berndporr/libcamera2opencv) which
+"knows" about the signal processing pipelines and exposes only one
+libcamera device per camera. However, on other architectures such as the
+[Rock5B+](https://radxa.com/products/rock5/5bp) you need to do it the
+hard way: understand the signal processing pipeline, configure
+sub-devices and then capture from the /dev/videoX which openCV can
+read and decode. See the 4VL deep dive further down.
 
 Here is the camera class (`camera.h` and `camera.cpp`):
 ```
