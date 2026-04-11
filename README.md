@@ -5,23 +5,34 @@ which then receives the frames at the framerate of the camera.
 
 It should run with the default parameters if you have a simple camera setup on `/dev/video0`.
 However, especially on ARM architectures such as the Raspberry PI or Rock5 there is a looooong
-singnal processing pipeline which you can obtain with `media-ctl -p -d </dev/mediaX>` with. In
+singnal processing pipeline which you can obtain with `media-ctl -p -d </dev/mediaX>`. In
 particular the camera might be a subdevice so needs to be configured separately for example
-`/dev/v4l-subdev2` on a Rock5.
+the actual camera is `/dev/v4l-subdev2` on a Rock5.
 
-Here is the camera class:
+Here is the camera class (`camera.h` and `camera.cpp`):
 ```
-/**
+ /**
   * Raw V4L parameters which can be queried with: "v4l2-ctl --device=/dev/v4l-subdev2 -L" and then use the
   * matching V4L2_CID_*** macro to change the value. For simple camera setups the device path will be
-  * /dev/video0 but for cameras with an Image Processor pipelie and will be a subdevice. You can find 
+  * /dev/video0 but for cameras with an Image Processor pipelie it will be a subdevice. You can find 
   * these with "media-ctl -p -d 0".
   */
 struct V4LParameter
 {
-    std::string devicePath; // the device path, for example /dev/v4l-subdev2
-    int parameter; // the parameter, for example V4L2_CID_GAIN
-    float value; // the value of the parameter. It's normalised between 0 and 1. boolan is either 0 or 1.
+    /**
+     *  The device path, for example /dev/v4l-subdev2 
+     * */
+    std::string devicePath;
+
+    /**
+     * The V4L control parameter (V4L2_CID_*), for example V4L2_CID_GAIN
+     */
+    int parameter;
+
+    /**
+     * The value of the parameter. It's normalised between 0 and 1. Or for boolan it's either 0 or 1.
+     */
+    float value;
 };
 
 /**
@@ -29,10 +40,35 @@ struct V4LParameter
  */
 struct OpenCVparameters
 {
-    int deviceID = 0; // the ID of the video device. Default is /dev/video0
-    unsigned int fourcc = 0; // the fourcc code of the capture format
-    int width = 0; // the requested image width (0=default)
-    int height = 0; // the requested image height (0=default)
+    /**
+     * The ID of the video device (/dev/videoX). Default is /dev/video0.
+     * Find out with "media-ctl -p -d </dev/mediaX>" which /dev/videoX is
+     * the capture device. On SBCs it's usually the output of the Image Signal Processor
+     * after it has turned the raw camera data into YUV or RGB.
+     */
+    int deviceID = 0;
+
+    /**
+     * Forcing the fourcc code of the capture format. Default is 0.
+     * Use "v4l2-ctl --list-formats-ext -d /dev/video23" to find out the allowed formats
+     * and then you can set the FourCC code, for example "cv::VideoWriter::fourcc('N', 'V', '1', '2')".
+     */
+    unsigned int fourcc = 0;
+
+    /**
+     * The requested image width (0=default)
+     */
+    int width = 0;
+
+    /**
+     * The requested image height (0=default)
+     */
+    int height = 0;
+
+    /**
+     * The requested framerate (0=default)
+     */
+    int framerate = 0;
 };
 
 /**
@@ -56,6 +92,7 @@ public:
      * and then the callback is called at the default framerate.
      * @param openCVparameters The parameters passed to openCV.
      * @param v4lParameters The parameters passed directly to an v4l subdevice.
+     * @returns The modified parameters are returned with the actual values for widths, framerate etc
      **/
     OpenCVparameters start(const OpenCVparameters openCVparameters = OpenCVparameters(),
                            const std::vector<V4LParameter> v4lParameters = {});
@@ -67,12 +104,13 @@ public:
 
     /**
      * Registers the callback which receives the frames.
+     * @param sc The std::function which receives the openCV Mat with the frame.
      **/
     void registerFrameCallback(OnFrame sc)
     {
         onFrame = sc;
     }
-
+}
 ```
 
 ## QT demo
@@ -102,7 +140,7 @@ The demo displays the camera in a QT window and is an example how it's done.
 ```
 media-ctl -p -d 0
 ```
-is usually the raw image capture chain without any further processing. The last device is the camera itself:
+is usually the *raw* image capture chain without any further processing. Here, the last device is the camera itself:
 
 ```
 - entity 63: m00_b_imx219 3-0010 (1 pad, 1 link, 0 routes)
@@ -112,9 +150,28 @@ is usually the raw image capture chain without any further processing. The last 
 		[stream:0 fmt:SRGGB10_1X10/3280x2464@10000/210000 field:none]
 		-> "rockchip-csi2-dphy0":0 [ENABLED]
 ```
-this can be seen as it has *only* a pad called SOURCE but no *sink*.
+this can be seen as it *only* has a pad called *SOURCE* but no *sink*.
 
-There might be a matching Image Signal Processor chain. This is in a different `/dev/media`. For example, `/dev/media2`:
+If you want to find out which parameters of the camera subdevice `/dev/v4l-subdev2` can be changed you can query them with:
+```
+v4l2-ctl --device=/dev/v4l-subdev2 -L
+User Controls
+
+                       exposure 0x00980911 (int)    : min=0 max=4095 step=1 default=1575 value=1575
+                           gain 0x00980913 (int)    : min=256 max=43663 step=1 default=256 value=21960
+                horizontal_flip 0x00980914 (bool)   : default=0 value=1
+                  vertical_flip 0x00980915 (bool)   : default=0 value=1
+
+Image Source Controls
+
+              vertical_blanking 0x009e0901 (int)    : min=36 max=36 step=1 default=36 value=36
+            horizontal_blanking 0x009e0902 (int)    : min=164 max=164 step=1 default=164 value=164
+                  analogue_gain 0x009e0903 (int)    : min=256 max=2816 step=1 default=512 value=512
+
+```
+
+There might be a matching Image Signal Processor chain which turns the RAW image data into something like YUV. 
+This is in a different `/dev/media`. For example, `/dev/media2`:
 
 ```
 media-ctl -p -d 2
@@ -159,6 +216,12 @@ Device topology
             device node name /dev/video22
 	pad0: SINK
 		<- "rkisp-isp-subdev":2 [ENABLED]
+		
+- entity 12: rkisp_selfpath (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video23
+	pad0: SINK
+		<- "rkisp-isp-subdev":2 [ENABLED]
 
 - entity 60: rkcif-mipi-lvds2 (1 pad, 1 link, 0 routes)
              type V4L2 subdev subtype Unknown flags 0
@@ -167,10 +230,34 @@ Device topology
 		[stream:0 fmt:SRGGB10_1X10/3280x2464@10000/210000 field:none]
 		-> "rkisp-isp-subdev":0 [ENABLED]
 ```
-This shows that `/dev/v4l-subdev4` is again camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` which can be captured!
+This shows that `/dev/v4l-subdev4` is again camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` and `/dev/video23` which can be captured! The ISP can convert to the following formats:
 
-So the parameters can be changed via the subdevices and devices. The `start()` method has a vector which allows to set parameters such as gain or horizontal flip.
+```
+v4l2-ctl --list-formats-ext -d 23
+ioctl: VIDIOC_ENUM_FMT
+	Type: Video Capture Multiplanar
 
+	[0]: 'UYVY' (UYVY 4:2:2)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[1]: 'NV16' (Y/UV 4:2:2)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[2]: 'NV61' (Y/VU 4:2:2)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[3]: 'NV21' (Y/VU 4:2:0)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[4]: 'NV12' (Y/UV 4:2:0)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[5]: 'NM21' (Y/VU 4:2:0 (N-C))
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[6]: 'NM12' (Y/UV 4:2:0 (N-C))
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[7]: 'GREY' (8-bit Greyscale)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+	[8]: 'RGBP' (16-bit RGB 5-6-5)
+		Size: Stepwise 32x32 - 1920x2464 with step 8/8
+```
+
+Specify the required image format to the openCV parameters as the fourcc string, for example 'NV12'.
 
 # Credits
 
