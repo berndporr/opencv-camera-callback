@@ -242,7 +242,7 @@ This shows that `/dev/v4l-subdev4` is again the camera itself, that this feeds t
 
 The whole pipeline looks like this:
 
-> imx219 sensor, /dev/v4l-subdev2, SRGGB10_1X10/3280x2464 --> /dev/v4l-subdev4 --> /dev/v4l-subdev3, YUYV8_2X8/3280x2464, crop --> /dev/video22 & /dev/video23, various pixelformats
+> imx219 sensor, /dev/v4l-subdev2, SRGGB10_1X10/3280x2464 &#10233; /dev/v4l-subdev4 &#10233; /dev/v4l-subdev3, YUYV8_2X8/3280x2464, crop &#10233; /dev/video22 & /dev/video23, various pixelformats
 
 
 The ISP can convert to the following formats:
