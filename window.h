@@ -16,8 +16,8 @@ public:
 	Window();
 	void updateImage(const cv::Mat &mat);
 
-	QHBoxLayout  *hLayout;  // horizontal layout
-	QLabel       *image;
+	QHBoxLayout *hLayout; // horizontal layout
+	QLabel *image;
 };
 
 #endif // WINDOW_H

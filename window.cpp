@@ -11,10 +11,10 @@ Window::Window()
 	setLayout(hLayout);
 }
 
-void Window::updateImage(const cv::Mat &mat) {
-	//fprintf(stderr,"%d x %d\n",mat.cols, mat.rows);
+void Window::updateImage(const cv::Mat &mat)
+{
 	const QImage frame(mat.data, mat.cols, mat.rows, mat.step,
-			   QImage::Format_BGR888);
+					   QImage::Format_BGR888);
 	image->setPixmap(QPixmap::fromImage(frame));
 	update();
 }

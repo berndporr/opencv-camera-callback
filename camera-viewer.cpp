@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
 	if (argc < 2)
 	{
-		fprintf(stderr,"Usage: %s <video dev #>\n",argv[0]);
+		fprintf(stderr, "Usage: %s <video dev #>\n", argv[0]);
 		return 0;
 	}
 
@@ -26,9 +26,6 @@ int main(int argc, char *argv[])
 	camera.registerFrameCallback([&](const cv::Mat &m)
 								 { window.updateImage(m); });
 
-	// Call the window timerEvent function every 20 ms to refresh the image
-	window.startTimer(20);
-
 	OpenCVparameters openCVparameters;
 	openCVparameters.deviceID = atoi(argv[1]);
 	openCVparameters.framerate = 30;
@@ -36,8 +33,9 @@ int main(int argc, char *argv[])
 	// Start the camera
 	openCVparameters = camera.start(openCVparameters);
 
-	if ( (0 == openCVparameters.height) || (0 == openCVparameters.width) ) {
-		fprintf(stderr,"Capture device has frame size of zero. Exiting.\n");
+	if ((0 == openCVparameters.height) || (0 == openCVparameters.width))
+	{
+		fprintf(stderr, "Capture device has frame size of zero. Exiting.\n");
 		return -1;
 	}
 
@@ -48,7 +46,9 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 
 	// Execute the application. This is blocking till the user closes it.
-	app.exec();
+	int r = app.exec();
 
 	camera.stop();
+
+	return r;
 }
