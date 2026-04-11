@@ -5,9 +5,11 @@ which then receives the frames at the framerate of the camera.
 
 It should run with the default parameters if you have a simple camera setup on `/dev/video0`.
 However, especially on ARM architectures such as the Raspberry PI or Rock5 there is a looooong
-singnal processing pipeline which you can obtain with `media-ctl -p -d </dev/mediaX>`. In
-particular the camera might be a subdevice so needs to be configured separately for example
-the actual camera is `/dev/v4l-subdev2` on a Rock5.
+singnal processing pipeline. On the Raspberry PI you could use libcamera which `knows` about
+the signal processing pipelines and exposes only one libcamera device. However, on other
+architectures such as the Rock5 you need to do it the hard way: understand the signal
+processing pipeline, configure sub-devices and then capture from the /dev/videoX which
+openCV can read and decde. See the 4VL deep dive further down.
 
 Here is the camera class (`camera.h` and `camera.cpp`):
 ```
@@ -133,14 +135,18 @@ make
 
 The demo displays the camera in a QT window and is an example how it's done.
 
-## V4L controls
+## V4L deep dive
 
-### Finding out which device does what
+I use as an example the Rock5B+ with two cameras attached which won't work with 
+libcamera so we def need to do it the hard way:
+
+Obtain with `media-ctl -p -d </dev/mediaX>` the video processing pipeline:
 
 ```
 media-ctl -p -d 0
 ```
-is usually the *raw* image capture chain without any further processing. Here, the last device is the camera itself:
+is usually the *raw* image capture chain without any further image processing or decoding. 
+Here, the *last device* is the *camera* itself:
 
 ```
 - entity 63: m00_b_imx219 3-0010 (1 pad, 1 link, 0 routes)
@@ -150,11 +156,13 @@ is usually the *raw* image capture chain without any further processing. Here, t
 		[stream:0 fmt:SRGGB10_1X10/3280x2464@10000/210000 field:none]
 		-> "rockchip-csi2-dphy0":0 [ENABLED]
 ```
-this can be seen as it *only* has a pad called *SOURCE* but no *sink*.
+it *only* has a pad called *SOURCE* but no *sink*.
 
+The camera is a V4L *subdevice*.
 If you want to find out which parameters of the camera subdevice `/dev/v4l-subdev2` can be changed you can query them with:
 ```
 v4l2-ctl --device=/dev/v4l-subdev2 -L
+
 User Controls
 
                        exposure 0x00980911 (int)    : min=0 max=4095 step=1 default=1575 value=1575
@@ -169,9 +177,9 @@ Image Source Controls
                   analogue_gain 0x009e0903 (int)    : min=256 max=2816 step=1 default=512 value=512
 
 ```
-
-There might be a matching Image Signal Processor chain which turns the RAW image data into something like YUV. 
-This is in a different `/dev/media`. For example, `/dev/media2`:
+This raw camera device outputs Bayer `SRGGB10` which is not really directly usable as it needs to
+be converted to YUV or RGB. For that reason there is a hardware Image Signal Processor on the Rock5B+. This
+image processing chain is described by *another* `/dev/mediaX`, here `/dev/media2`:
 
 ```
 media-ctl -p -d 2
@@ -230,10 +238,11 @@ Device topology
 		[stream:0 fmt:SRGGB10_1X10/3280x2464@10000/210000 field:none]
 		-> "rkisp-isp-subdev":0 [ENABLED]
 ```
-This shows that `/dev/v4l-subdev4` is again camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` and `/dev/video23` which can be captured! The ISP can convert to the following formats:
+This shows that `/dev/v4l-subdev4` is again the camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` and `/dev/video23` which can be captured! The ISP can convert to the following formats:
 
 ```
 v4l2-ctl --list-formats-ext -d 23
+
 ioctl: VIDIOC_ENUM_FMT
 	Type: Video Capture Multiplanar
 
@@ -258,6 +267,32 @@ ioctl: VIDIOC_ENUM_FMT
 ```
 
 Specify the required image format to the openCV parameters as the fourcc string, for example 'NV12'.
+
+The overall init of the two cameras then looks like:
+
+```
+OpenCVparameters openCVparameters1;
+openCVparameters1.deviceID = 23;
+openCVparameters1.framerate = 10;
+openCVparameters1.fourcc = cv::VideoWriter::fourcc('G', 'R', 'E', 'Y');
+// 1st camera sensor is v4l-subdev2
+camera1.start(openCVparameters1,
+    {{"/dev/v4l-subdev2", V4L2_CID_GAIN, 0.5},
+     {"/dev/v4l-subdev2", V4L2_CID_HFLIP, 1},
+     {"/dev/v4l-subdev2", V4L2_CID_VFLIP, 1}});
+OpenCVparameters openCVparameters2;
+openCVparameters2.deviceID = 32;
+openCVparameters2.framerate = 10;
+openCVparameters2.fourcc = cv::VideoWriter::fourcc('G', 'R', 'E', 'Y');
+// 2nd camera sensor is v4l-subdev7
+camera2.start(openCVparameters2,
+    {{"/dev/v4l-subdev7", V4L2_CID_GAIN, 0.5},
+     {"/dev/v4l-subdev7", V4L2_CID_HFLIP, 1},
+     {"/dev/v4l-subdev7", V4L2_CID_VFLIP, 1}});
+```
+where the 1st camera is on `/dev/video23` and the 2nd camera is on `/dev/video32`.
+Using their sensor subdevices we directly configure the sensors to flip the image and
+to apply a gain of 0.5.
 
 # Credits
 
