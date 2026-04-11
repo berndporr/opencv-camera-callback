@@ -238,7 +238,14 @@ Device topology
 		[stream:0 fmt:SRGGB10_1X10/3280x2464@10000/210000 field:none]
 		-> "rkisp-isp-subdev":0 [ENABLED]
 ```
-This shows that `/dev/v4l-subdev4` is again the camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` and `/dev/video23` which can be captured! The ISP can convert to the following formats:
+This shows that `/dev/v4l-subdev4` is again the camera itself, that this feeds to the cropping subdev `/dev/v4l-subdev3` and finally that feeds to `/dev/video22` and `/dev/video23` which can be captured! 
+
+The whole pipeline looks like this:
+```
+imx219 sensor, /dev/v4l-subdev2, SRGGB10_1X10/3280x2464 --> /dev/v4l-subdev4 --> /dev/v4l-subdev3, YUYV8_2X8/3280x2464, crop --> /dev/video22 & /dev/video23, various pixelformats
+```
+
+The ISP can convert to the following formats:
 
 ```
 v4l2-ctl --list-formats-ext -d 23
