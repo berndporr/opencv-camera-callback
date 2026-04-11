@@ -5,6 +5,12 @@
 // Main program
 int main(int argc, char *argv[])
 {
+	if (argc < 2)
+	{
+		fprintf(stderr,"Usage: %s <video dev #>\n",argv[0]);
+		return 0;
+	}
+
 	QApplication app(argc, argv);
 
 	// Create camera
@@ -24,10 +30,8 @@ int main(int argc, char *argv[])
 	window.startTimer(20);
 
 	OpenCVparameters openCVparameters;
-	if (argc > 1)
-	{
-		openCVparameters.deviceID = atoi(argv[1]);
-	}
+	openCVparameters.deviceID = atoi(argv[1]);
+	openCVparameters.framerate = 30;
 
 	// Start the camera
 	openCVparameters = camera.start(openCVparameters);
