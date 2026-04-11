@@ -82,12 +82,18 @@ OpenCVparameters Camera::start(OpenCVparameters openCVparameters,
 	openCVparameters.height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	videoCapture.set(cv::CAP_PROP_CONVERT_RGB, 1);
 	openCVparameters.fourcc = videoCapture.get(cv::CAP_PROP_FOURCC);
-	if (openCVparameters.framerate > 0) {
-		videoCapture.set(cv::CAP_PROP_FPS, openCVparameters.framerate);		
+	if (openCVparameters.framerate > 0)
+	{
+		videoCapture.set(cv::CAP_PROP_FPS, openCVparameters.framerate);
 	}
 	openCVparameters.framerate = videoCapture.get(cv::CAP_PROP_FPS);
-	//starting capture
-	cameraThread = std::thread(&Camera::threadLoop, this);
+
+	// Let see if we have anything to capture
+	if ((openCVparameters.height > 0) && (openCVparameters.width > 0))
+	{
+		// starting capture
+		cameraThread = std::thread(&Camera::threadLoop, this);
+	}
 	return openCVparameters;
 }
 

@@ -36,6 +36,11 @@ int main(int argc, char *argv[])
 	// Start the camera
 	openCVparameters = camera.start(openCVparameters);
 
+	if ( (0 == openCVparameters.height) || (0 == openCVparameters.width) ) {
+		fprintf(stderr,"Capture device has frame size of zero. Exiting.\n");
+		return -1;
+	}
+
 	fprintf(stderr, "Resolution: %d x %d\n", openCVparameters.width, openCVparameters.height);
 	fprintf(stderr, "FOURCC:");
 	for (long unsigned int i = 0; i < sizeof(openCVparameters.fourcc); i++)
