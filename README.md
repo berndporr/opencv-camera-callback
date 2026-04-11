@@ -5,7 +5,7 @@ which then receives the frames at the framerate of the camera.
 
 It should run with the default parameters if you have a simple camera setup on `/dev/video0`.
 However, especially on ARM architectures such as the Raspberry PI or Rock5 there is a looooong
-singnal processing pipeline. On the Raspberry PI you could use libcamera which `knows` about
+singnal processing pipeline. On the Raspberry PI you could use libcamera which "knows" about
 the signal processing pipelines and exposes only one libcamera device. However, on other
 architectures such as the Rock5 you need to do it the hard way: understand the signal
 processing pipeline, configure sub-devices and then capture from the /dev/videoX which
@@ -296,8 +296,9 @@ to apply a gain of 0.5.
 
 # Credits
 
+ * Bernd Porr, mail@berndporr.me.uk, bernd.porr@glasgow.ac.uk
  * [Ross Gardiner](https://github.com/rossGardiner)
  * [Adam Frew](https://github.com/Saweenbarra) 
  * [Alban Joseph](https://github.com/albanjoseph)
  * [Lewis Russell](https://github.com/charger4241)
- * Bernd Porr
+
